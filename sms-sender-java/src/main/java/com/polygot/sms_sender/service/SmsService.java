@@ -2,6 +2,7 @@ package com.polygot.sms_sender.service;
 
 import com.polygot.sms_sender.dto.SmsRequest;
 import com.polygot.sms_sender.dto.SmsResponse;
+import com.polygot.sms_sender.kafka.SmsEventProducer;
 import com.polygot.sms_sender.vendor.ImiConnectSmsVendor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,11 +17,17 @@ public class SmsService {
 
     private final ImiConnectSmsVendor imiConnectSmsVendor;
     private final BlocklistService blocklistService;
+    private final SmsEventProducer smsEventProducer;
 
-    public SmsService(ImiConnectSmsVendor imiConnectSmsVendor,BlocklistService blocklistService) {
+    public SmsService(
+                ImiConnectSmsVendor imiConnectSmsVendor,
+                BlocklistService blocklistService,
+                SmsEventProducer smsEventProducer
+        ) {
         this.imiConnectSmsVendor = imiConnectSmsVendor;
         this.blocklistService = blocklistService;
-    }
+        this.smsEventProducer = smsEventProducer;
+        }
 
     public SmsResponse sendSms(SmsRequest request) {
 
@@ -29,15 +36,20 @@ public class SmsService {
                 request.getUserId()
         );
         if(blocklistService.isBlocked(request.getUserId())) {
-            
-            logger.warn(
-                    "Blocked user attempted SMS send: {}",
-                    request.getUserId()
-            );
-            return new SmsResponse(
-                    "BLOCKED",
-                    "User is blocked from sending SMS"
-            );
+                logger.warn(
+                        "Blocked user attempted SMS send: {}",
+                        request.getUserId()
+                );
+
+                smsEventProducer.publishSmsEvent(
+                        request,
+                        "BLOCKED"
+                );
+
+                return new SmsResponse(
+                        "BLOCKED",
+                        "User is blocked from sending SMS"
+                );
         }
         boolean success = imiConnectSmsVendor.sendSms(
                 request.getPhoneNumber(),
@@ -45,13 +57,20 @@ public class SmsService {
         );
 
         if(success) {
-
-            return new SmsResponse(
-                    "SUCCESS",
-                    "SMS sent successfully"
-            );
+                smsEventProducer.publishSmsEvent(
+                        request,
+                        "SUCCESS"
+                );
+                return new SmsResponse(
+                        "SUCCESS",
+                        "SMS sent successfully"
+                );
         }
 
+        smsEventProducer.publishSmsEvent(
+                request,
+                "FAIL"
+        );
         return new SmsResponse(
                 "FAIL",
                 "SMS sending failed"
