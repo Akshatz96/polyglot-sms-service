@@ -5,14 +5,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"sms-store-go/repository"
+	"sms-store-go/service"
 )
 
 func GetSmsHistory(c *gin.Context) {
 
 	userId := c.Param("userId")
 
-	results, err := repository.GetSmsHistory(
+	results, err := service.GetSmsHistory(
 		userId,
 	)
 
