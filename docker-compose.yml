@@ -29,3 +29,28 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
 
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  
+  mongodb:
+    image: mongo:7
+
+    container_name: mongodb
+
+    ports:
+      - "27017:27017"
+
+    environment:
+      MONGO_INITDB_DATABASE: smsdb
+  
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    container_name: kafka-ui
+
+    depends_on:
+      - kafka
+
+    ports:
+      - "8085:8080"
+
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
