@@ -6,6 +6,8 @@ import com.polygot.sms_sender.dto.SmsResponse;
 
 import com.polygot.sms_sender.service.SmsService;
 
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 
 import org.springframework.web.bind.annotation.*;
@@ -28,7 +30,7 @@ public class SmsController {
 
     public ResponseEntity<SmsResponse> sendSms(
 
-            @RequestBody SmsRequest request
+            @Valid@RequestBody SmsRequest request
 
     ) {
 
