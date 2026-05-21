@@ -6,6 +6,7 @@ import com.polygot.sms_sender.vendor.ImiConnectSmsVendor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import com.polygot.sms_sender.redis.BlocklistService;
 
 @Service
 public class SmsService {
@@ -14,9 +15,11 @@ public class SmsService {
             LoggerFactory.getLogger(SmsService.class);
 
     private final ImiConnectSmsVendor imiConnectSmsVendor;
+    private final BlocklistService blocklistService;
 
-    public SmsService(ImiConnectSmsVendor imiConnectSmsVendor) {
+    public SmsService(ImiConnectSmsVendor imiConnectSmsVendor,BlocklistService blocklistService) {
         this.imiConnectSmsVendor = imiConnectSmsVendor;
+        this.blocklistService = blocklistService;
     }
 
     public SmsResponse sendSms(SmsRequest request) {
@@ -25,7 +28,17 @@ public class SmsService {
                 "Received SMS request for user {}",
                 request.getUserId()
         );
-
+        if(blocklistService.isBlocked(request.getUserId())) {
+            
+            logger.warn(
+                    "Blocked user attempted SMS send: {}",
+                    request.getUserId()
+            );
+            return new SmsResponse(
+                    "BLOCKED",
+                    "User is blocked from sending SMS"
+            );
+        }
         boolean success = imiConnectSmsVendor.sendSms(
                 request.getPhoneNumber(),
                 request.getMessage()
